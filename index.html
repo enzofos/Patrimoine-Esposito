@@ -1,0 +1,40 @@
+<!DOCTYPE html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Patrimoine Pro V2</title><style>
+body{font-family:Segoe UI,sans-serif;background:#0f172a;color:#fff;max-width:1200px;margin:auto;padding:20px}
+.card{background:#1e293b;padding:15px;border-radius:14px;margin:12px 0}
+input,select,button{padding:10px;margin:4px;border:none;border-radius:8px}button{background:#2563eb;color:#fff}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px}
+</style></head><body>
+<h1>💰 Patrimoine Pro V2</h1>
+<div class='card'>
+<select id='cat'><option>Compte</option><option>Livret</option><option>PEA</option><option>CTO</option><option>Assurance Vie</option><option>Crypto</option><option>Immobilier</option><option>Véhicule</option><option>Dette</option></select>
+<input id='nom' placeholder='Nom'>
+<input id='val' type='number' placeholder='Montant'>
+<button onclick='ajouter()'>Ajouter</button>
+</div>
+<div class='card'>
+<h3>🎯 Objectif patrimoine net</h3>
+<input id='objectif' type='number' placeholder='Ex: 100000' onchange='saveGoal()'>
+<div id='goalInfo'></div>
+</div>
+<div class='card'><button onclick='snapshot()'>📅 Enregistrer patrimoine du mois</button><div id='hist'></div></div>
+<div class='grid'>
+<div class='card'><h3>Patrimoine brut</h3><div id='brut'></div></div>
+<div class='card'><h3>Dettes</h3><div id='dettes'></div></div>
+<div class='card'><h3>Patrimoine net</h3><div id='net'></div></div>
+<div class='card'><h3>Revenus passifs annuels</h3><input id='revenus' type='number' placeholder='0' onchange='saveGoal()'><div id='passif'></div></div>
+</div>
+<div class='card'><h3>Répartition</h3><div id='repart'></div></div>
+<div class='card'><h3>Actifs & Dettes</h3><div id='liste'></div></div>
+<script>
+let db=JSON.parse(localStorage.patrimoineV2||'[]');
+let history=JSON.parse(localStorage.patrimoineHistory||'[]');
+objectif.value=localStorage.goal||''; revenus.value=localStorage.passif||'';
+function save(){localStorage.patrimoineV2=JSON.stringify(db);render();}
+function saveGoal(){localStorage.goal=objectif.value;localStorage.passif=revenus.value;render();}
+function ajouter(){db.push({c:cat.value,n:nom.value,v:+val.value||0});save();}
+function sup(i){db.splice(i,1);save();}
+function snapshot(){let netv=calc().net;history.push({d:new Date().toLocaleDateString('fr-FR'),n:netv});localStorage.patrimoineHistory=JSON.stringify(history);render();}
+function calc(){let brut=0,det=0,cats={};db.forEach(x=>{if(x.c==='Dette')det+=Math.abs(x.v); else brut+=x.v; cats[x.c]=(cats[x.c]||0)+x.v}); return {brut,det,net:brut-det,cats};}
+function render(){let r=calc(); brut.innerText=r.brut.toFixed(2)+' €'; dettes.innerText=r.det.toFixed(2)+' €'; net.innerText=r.net.toFixed(2)+' €'; passif.innerText=(+revenus.value||0).toFixed(2)+' €'; let g=+objectif.value||0; let pct=g?Math.min(100,r.net/g*100):0; goalInfo.innerHTML=g?`${pct.toFixed(1)}% atteint (${r.net.toFixed(0)}€ / ${g.toFixed(0)}€)`:'Aucun objectif'; repart.innerHTML=Object.entries(r.cats).map(([k,v])=>`${k}: ${v.toFixed(2)} €`).join('<br>'); liste.innerHTML=db.map((x,i)=>`${x.c} | ${x.n} | ${x.v.toFixed(2)} € <button onclick='sup(${i})'>X</button>`).join('<br>'); hist.innerHTML=history.map(h=>`${h.d} : ${h.n.toFixed(2)} €`).join('<br>');}
+render();
+</script></body></html>
